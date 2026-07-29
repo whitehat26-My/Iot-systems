@@ -1,0 +1,19 @@
+# Python dependencies for the hub (and for running the stack on your laptop).
+#
+#   python3 -m venv .venv
+#   source .venv/bin/activate        # Windows: .venv\Scripts\activate
+#   pip install -r hub/requirements.txt
+#
+# On the Pi, hub/install.sh does this for you. A venv is not optional there:
+# modern Raspberry Pi OS refuses system-wide pip installs with
+# "error: externally-managed-environment" (PEP 668).
+#
+# Note there is no database driver here — sqlite3 ships with Python.
+
+# MQTT client. 2.x required: the callback signatures in collector.py use the
+# VERSION2 API, which does not exist in 1.x.
+paho-mqtt>=2.1,<3
+
+# Web framework and ASGI server for the dashboard.
+fastapi>=0.110
+uvicorn>=0.27

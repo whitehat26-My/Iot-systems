@@ -1,0 +1,41 @@
+# Serves the dashboard on port 8000.
+#
+# This is a TEMPLATE. hub/install.sh fills in __REPO__ and __USER__ and writes
+# the result to /etc/systemd/system/. Do not copy it by hand — the placeholders
+# would be taken literally and the service would fail to start.
+
+[Unit]
+Description=IoT room sensor dashboard (FastAPI)
+Documentation=https://github.com/whitehat26-My/Iot-systems
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__REPO__
+
+# Runs api.py directly rather than `uvicorn server.api:app`, because server/ is
+# a plain folder of scripts and not an installed package — this way there is no
+# question about import paths.
+ExecStart=__REPO__/.venv/bin/python __REPO__/server/api.py
+
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Listens on 0.0.0.0:8000 so you can open it from your phone. That is LAN-only:
+# do not port-forward it on your router. See docs/07-next-steps.md.
+
+# --- modest hardening ---------------------------------------------------------
+# The API only reads the database, but SQLite in WAL mode needs write access to
+# its -wal and -shm sidecar files even for readers, so the repo stays writable.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=__REPO__
+
+[Install]
+WantedBy=multi-user.target

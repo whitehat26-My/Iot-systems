@@ -1,0 +1,44 @@
+# Stores incoming MQTT readings in SQLite.
+#
+# This is a TEMPLATE. hub/install.sh fills in __REPO__ and __USER__ and writes
+# the result to /etc/systemd/system/. Do not copy it by hand — the placeholders
+# would be taken literally and the service would fail to start.
+
+[Unit]
+Description=IoT room sensor collector (MQTT to SQLite)
+Documentation=https://github.com/whitehat26-My/Iot-systems
+
+# The broker is on this machine, so start after it. `Wants` rather than
+# `Requires`: if mosquitto is briefly down we want the collector to keep
+# running and reconnect, not to be stopped along with it.
+After=network-online.target mosquitto.service
+Wants=network-online.target mosquitto.service
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__REPO__
+
+# The venv's interpreter, not the system one. Modern Raspberry Pi OS refuses
+# system-wide pip installs (PEP 668), so paho-mqtt only exists inside the venv.
+ExecStart=__REPO__/.venv/bin/python __REPO__/server/collector.py
+
+# Keep running through crashes and broker restarts. A hub that stays down after
+# one bad night is not a hub.
+Restart=always
+RestartSec=5
+
+# Send stdout/stderr to the journal:  journalctl -u iot-collector -f
+StandardOutput=journal
+StandardError=journal
+
+# --- modest hardening ---------------------------------------------------------
+# It only needs to read the repo and write the database, so deny the rest.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=__REPO__
+
+[Install]
+WantedBy=multi-user.target

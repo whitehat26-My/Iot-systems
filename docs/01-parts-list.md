@@ -95,6 +95,14 @@ Pi kits mostly bundle things you already need, plus one thing you don't:
 PSU, cooling, decent SD card — before assuming a bundle saves money. It usually
 doesn't, and the difference buys several more sensor nodes or the NVMe upgrade.
 
+**Don't let an out-of-stock variant push you up a tier.** Bundles routinely have
+the mid-range RAM option greyed out while the expensive one is available, and it
+is very easy to shrug and take the 8GB for a few hundred ringgit more. Before you
+do: check the same seller's **bare board** listing, since bundle and mainboard
+stock are tracked separately, then check the other resellers. Nothing here needs
+a Pi urgently — on the [ESP32-first route](00-esp32-first.md) your laptop is the
+hub, so waiting a fortnight for a restock costs you nothing at all.
+
 **Don't buy both a case and the active cooler.** The official Pi 5 case includes
 its own fan, so it replaces the cooler. A bare board on a desk with the active
 cooler is completely fine to start.

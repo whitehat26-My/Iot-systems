@@ -20,8 +20,35 @@ a powered board is how you short 3V3 to GND with a slipped jumper.
 | **SDA** (or SDI) | **GPIO21** | I²C data |
 | **SCL** (or SCK) | **GPIO22** | I²C clock |
 
-Leave any other pins on the module (CSB, SDO) unconnected — they're for SPI mode
-and for selecting the I²C address, and the defaults are fine.
+### 4-pin or 6-pin module?
+
+Both are common and both work. If yours has only `VIN GND SCL SDA`, wire those
+four and you're done — skip to the diagram.
+
+If it has **six pins** (`VCC GND SCL SDA CSB SDO`, sometimes silkscreened `CSE`
+and `SDC`), wire the same four and **leave CSB and SDO unconnected to begin
+with.** Those two are for SPI mode and for choosing the I²C address, and most
+boards pull them to sensible defaults with onboard resistors.
+
+**But not all of them do**, and that's the one extra way a 6-pin board can fail:
+
+- **CSB** selects the mode. It must be **HIGH** for I²C. If the board doesn't pull
+  it up, the chip sits in SPI mode and ignores I²C entirely — your scan finds
+  nothing at all.
+- **SDO** selects the address: LOW → `0x76`, HIGH → `0x77`. Left floating on a
+  board without a pull resistor, the address is unpredictable and the scan can
+  come up empty, or find the chip only intermittently.
+
+So if your scan below returns `[]` on a 6-pin board and the wiring is definitely
+right, add these two jumpers before assuming the module is dead:
+
+| Pin | Connect to | Effect |
+|---|---|---|
+| CSB / CSE | **3V3** | Forces I²C mode |
+| SDO / SDC | **GND** | Fixes the address at `0x76` |
+
+That combination is unambiguous and always works. It's two extra wires and it
+turns an intermittent mystery into a sensor that just answers.
 
 ```
       ESP32 DevKitC                       BME280
@@ -91,6 +118,7 @@ An empty list means nothing responded. In order of likelihood:
 |---|---|
 | SDA and SCL swapped | Swap them. Costs nothing to try, and it's the most common fault. |
 | A jumper not fully seated | Push each one in firmly. Breadboard jumpers back out easily. |
+| **6-pin board, CSB/SDO floating** | Tie **CSB → 3V3** and **SDO → GND**, as described above. This is the usual answer on a 6-pin module whose wiring looks correct. |
 | No power to the module | Many boards have a power LED. If you have a multimeter, check 3.3V between VIN and GND. |
 | Wrong row on the breadboard | The centre channel splits the board — a wire one row off connects to nothing. |
 | Dead module | If you bought two ESP32s, swap the board. If not, this is where a spare would have helped. |

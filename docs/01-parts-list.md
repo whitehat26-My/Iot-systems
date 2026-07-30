@@ -47,6 +47,29 @@ one-time cost — once the hub exists, each additional room costs about RM 40.
 - [ ] **USB microSD card reader** — RM 10–15 — *only if your laptop has no SD slot.*
       You need some way to write the OS image.
 
+### ⚠️ All-in-one Pi kits are usually a bad deal
+
+Bundles branded "Raspberry Pi 5 Starter Kit" are common and often cost far more
+than their contents. One seen at RM831 for a 4GB kit, against RM455–580 for the
+same parts bought individually — a 43–83% markup.
+
+Unlike the ESP32 kits (which genuinely add value with sensors you'd want anyway),
+Pi kits mostly bundle things you already need, plus one thing you don't:
+
+- **Micro-HDMI cables — usually two.** We set the Pi up headless over SSH; you
+  will never plug a monitor in. That's RM30–50 of the price, unused.
+- **The power supply is the part to check.** Kits frequently include a generic
+  5V/5A adapter rather than the official 27W PD unit, and often with the wrong
+  plug for your country — a US two-pin adapter is no use on Malaysian Type G
+  sockets. This is the one component not to compromise on: an inadequate supply
+  causes exactly the random instability people spend months blaming the board
+  for. If the kit's PSU is generic you will buy the official one anyway, on top
+  of an already-inflated price.
+
+**Price any kit against the four things you actually need** — board, official
+PSU, cooling, decent SD card — before assuming a bundle saves money. It usually
+doesn't, and the difference buys several more sensor nodes or the NVMe upgrade.
+
 **Don't buy both a case and the active cooler.** The official Pi 5 case includes
 its own fan, so it replaces the cooler. A bare board on a desk with the active
 cooler is completely fine to start.

@@ -26,16 +26,31 @@ excellent always-on brain. Once it exists, **each extra room costs about RM 40 a
 needs zero changes to the hub** — a new node just starts publishing another MQTT
 topic.
 
-## Start here
+## Start here — pick a route
 
-Read the docs in order. Each one ends in something visibly working, and you
-shouldn't start the next until the current one does.
+**Route A — ESP32 first (~RM 47–86). Recommended.**
+Buy only the sensor node; your **laptop** is the hub. The ESP32 is the harder and
+more interesting half, so you learn the most for the least money, and you find out
+whether you enjoy this before spending RM 450. Nothing is wasted: when you add a Pi
+later it takes over the laptop's job, your readings come with you, and the only
+change on the node is one line.
+→ **[00 — Start with just the ESP32](docs/00-esp32-first.md)**
+
+**Route B — the full build (~RM 460–570).**
+Pi 5 hub plus ESP32 node, running 24/7 from the start. Take this if you already
+know you want an always-on home server, or you already own a Pi.
+→ start at [01 — Parts list](docs/01-parts-list.md)
+
+Either way the docs below are the same; Route A just skips 02 and 03 until later.
+Read them in order — each ends in something visibly working, and you shouldn't
+start the next until the current one does.
 
 | Doc | What you get | Hardware needed |
 |---|---|---|
-| [01 — Parts list](docs/01-parts-list.md) | A shopping list, ~RM 460–570 | none |
-| [02 — Hub setup](docs/02-hub-setup.md) | A Pi you can SSH into | Pi 5 |
-| [03 — Mosquitto](docs/03-hub-mosquitto.md) | An MQTT broker your whole LAN can reach | Pi 5 |
+| [00 — ESP32 first](docs/00-esp32-first.md) | The cheap route, laptop as hub | none |
+| [01 — Parts list](docs/01-parts-list.md) | A shopping list | none |
+| [02 — Hub setup](docs/02-hub-setup.md) | A Pi you can SSH into | Pi 5 *(Route B / later)* |
+| [03 — Mosquitto](docs/03-hub-mosquitto.md) | An MQTT broker your whole LAN can reach | Pi 5 *(Route B / later)* |
 | [04 — Node wiring](docs/04-node-wiring.md) | A sensor the ESP32 can see | ESP32 + BME280 |
 | [05 — Flashing the node](docs/05-node-flash.md) | MicroPython running on the ESP32 | ESP32 |
 | [06 — Run the stack](docs/06-run-the-stack.md) | The whole thing, surviving reboots | all |

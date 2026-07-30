@@ -3,7 +3,13 @@
 This is the spine of the project: eight steps, each ending in something you can
 see working. **Don't start the next one until the current one works.**
 
-Steps 1 needs no hardware at all. Steps 2–4 need the Pi. Steps 5–8 need the ESP32.
+Step 1 needs no hardware at all. Steps 2–4 need the Pi. Steps 5–8 need the ESP32.
+
+> **On the ESP32-only route?** Do **step 1**, then skip 2–4 (they're Pi setup) and
+> go straight to steps 5–7, using your laptop's IP as `MQTT_HOST`. There's one
+> extra thing to get right — your laptop's firewall — covered in
+> [00 — Start with just the ESP32](00-esp32-first.md#make-your-laptop-reachable).
+> Come back for steps 2–4 when you buy a Pi.
 
 | | Step | You end up with |
 |---|---|---|

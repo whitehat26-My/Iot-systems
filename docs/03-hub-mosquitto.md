@@ -69,11 +69,19 @@ allow_anonymous true
 `0.0.0.0` means "accept connections on every network interface". That's what lets
 the ESP32 in.
 
-Confirm it took — you want `0.0.0.0:1883`, not `127.0.0.1:1883`:
+Confirm it took. You want to see `0.0.0.0` or `*` — **not** `127.0.0.1`:
 
 ```bash
 ss -ltnp | grep 1883
 # LISTEN 0 100 0.0.0.0:1883 0.0.0.0:*  users:(("mosquitto",...))
+```
+
+If `ss` isn't found (it lives in `/usr/sbin`, which isn't always on a normal
+user's PATH), either of these does the same job:
+
+```bash
+/usr/sbin/ss -ltn | grep 1883
+lsof -nP -iTCP:1883 -sTCP:LISTEN      # want *:1883, not 127.0.0.1:1883
 ```
 
 ## Prove it works from another machine

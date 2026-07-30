@@ -4,12 +4,23 @@ Rough mid-2026 street prices in RM (Shopee / Lazada / Cytron / local electronics
 shops). **Verify before ordering** — these move around, and Pi stock especially
 comes and goes.
 
-Total: **roughly RM 460–570.** About 85% of that is the Pi, and it is a one-time
-cost — once the hub exists, each additional room costs about RM 40.
+> ### Buying the ESP32 only? (recommended)
+>
+> **Skip straight to [the node section](#the-node--esp32-rm-4786) — RM 47–86.**
+> Your laptop acts as the hub, so you need none of the Pi hardware below. That's
+> the route in [00 — Start with just the ESP32](00-esp32-first.md), and nothing
+> you build is wasted when you add a Pi later.
+>
+> The Pi section is here for when you're ready for 24/7 collection.
+
+Full build total: **roughly RM 460–570.** About 85% of that is the Pi, and it's a
+one-time cost — once the hub exists, each additional room costs about RM 40.
 
 ---
 
 ## The hub — Raspberry Pi 5 (~RM 410–485)
+
+*Not needed for Route A. Your laptop does this job until you buy one.*
 
 - [ ] **Raspberry Pi 5** — RM 300–350
       Search: `Raspberry Pi 5 4GB`

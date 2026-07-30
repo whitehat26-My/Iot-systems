@@ -95,6 +95,25 @@ def publish(client, values):
     client.publish("{}/state".format(TOPIC_BASE), json.dumps(snapshot))
 
 
+def apply_offsets(values):
+    """Correct for the node's own heat, per TEMP_OFFSET / HUMIDITY_OFFSET.
+
+    Mutates and returns the dict. Both default to 0.0, so this does nothing
+    until you measure your node against a thermometer you trust — see the notes
+    in config.example.py.
+    """
+    t_off = getattr(config, "TEMP_OFFSET", 0.0)
+    h_off = getattr(config, "HUMIDITY_OFFSET", 0.0)
+
+    if t_off and "temperature" in values:
+        values["temperature"] = round(values["temperature"] + t_off, 2)
+    if h_off and "humidity" in values:
+        # Still a percentage afterwards, so clamp rather than publish 103%.
+        values["humidity"] = round(min(100.0, max(0.0, values["humidity"] + h_off)), 2)
+
+    return values
+
+
 def make_sensor():
     """Detect the attached sensor, printing what was found and any caveats."""
     import sensor as sensor_lib
@@ -136,7 +155,7 @@ def main():
 
     while True:
         try:
-            values = sensor.read()
+            values = apply_offsets(sensor.read())
             publish(client, values)
 
             # A compact line per reading, so watching over USB tells you

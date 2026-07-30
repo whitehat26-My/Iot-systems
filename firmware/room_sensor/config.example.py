@@ -64,6 +64,23 @@ DHT_TYPE = "DHT22"
 # none at all. Set to None to disable the blinking; it is only a convenience.
 LED_PIN = 2
 
+# --- Calibration ------------------------------------------------------------
+# An ESP32 with its WiFi radio on dissipates around half a watt, and warm air
+# rises off it. A BME280 sitting on the same breadboard typically reads 1-3C too
+# high because of this - you end up measuring the board, not the room.
+#
+# Fix it physically first: move the sensor 10-20cm away on jumper wires, and not
+# directly above the ESP32. Only then use these to remove whatever is left.
+#
+# How to find your offset: leave the node next to a thermometer you trust for an
+# hour, then set TEMP_OFFSET to (real reading - what the node reports). A node
+# reading 28.5 in a room that is really 27.0 needs TEMP_OFFSET = -1.5.
+#
+# Do this after the node has been running an hour: self-heating takes that long
+# to stabilise, so calibrating from cold gives you the wrong number.
+TEMP_OFFSET = 0.0        # degrees C, added to every reading
+HUMIDITY_OFFSET = 0.0    # %RH, added to every reading
+
 # --- Behaviour when things go wrong -----------------------------------------
 # After this many consecutive failures (sensor or network), reboot the board.
 # An ESP32 that has been up for weeks occasionally wedges its WiFi stack, and a

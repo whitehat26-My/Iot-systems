@@ -304,6 +304,81 @@ That's the point at which it stops being a project and starts being infrastructu
 
 ---
 
+## Where to actually put it
+
+Placement changes your readings more than anything in the code. A sensor in the
+afternoon sun reads 5–10 °C above room temperature, and no amount of good
+software fixes that.
+
+### First: get the sensor away from the ESP32
+
+**This is the one that will affect you.** An ESP32 with its WiFi radio running
+dissipates around half a watt, and warm air rises straight off it. A BME280 on the
+same breadboard typically reads **1–3 °C high** — you're measuring the board, not
+the room.
+
+Your kit has F-M and M-M dupont cables for exactly this. Move the sensor
+**10–20 cm away** on wires, and **not directly above** the ESP32, since that's
+where the warm air goes. Sideways or below is better than on top.
+
+I²C is happy over that distance. Much past ~50 cm on breadboard jumpers it gets
+unreliable, so 20 cm is the sweet spot.
+
+### Then: pick the spot
+
+| Do | Why |
+|---|---|
+| **1.1–1.5 m above the floor** | Roughly where you actually are. Warm air rises, so the ceiling can be several degrees above the floor — the number only means something at your height. |
+| **Interior wall** | Exterior walls run hot or cold with the outside and drag the reading with them. |
+| **Free air around it** | Not in a drawer, not face-down on a shelf, not sealed in a box. It needs the room's air to reach it. |
+| **Somewhere permanent** | Consistency beats perfection. You're reading *trends*, and a sensor that moves makes every comparison meaningless. |
+
+| Avoid | What it does to your data |
+|---|---|
+| **Direct sunlight** — any time of day | The worst offender: +5–10 °C. Check where the afternoon sun lands, not just where it is now. |
+| **Air-conditioner airflow** | You measure the aircon's output, not the room. Readings swing wildly and mean nothing. |
+| **Right by the door or an open window** | Every draft becomes a spike. |
+| **On top of electronics** | Your router, TV, laptop and phone charger all sit in their own warm bubble. |
+| **Floor or ceiling** | Both are several degrees off what you actually feel. |
+| **A sealed enclosure** | Traps the node's own heat — the breadboard problem, but worse. If you box it, drill holes. |
+
+For a bedroom, a good default is **a shelf or wall bracket on an interior wall,
+about chest height, away from the window and out of the aircon's path** — with a
+short USB run to a phone charger.
+
+### Mounting, cheaply
+
+Nothing fancy is required and nothing needs to be permanent:
+
+- **Velcro or Command strips** on the back of the breadboard, stuck to the wall.
+  Removable, costs almost nothing, and the breadboard's own backing is adhesive.
+- **A small plastic box with holes drilled in it** — tidy, keeps dust off. Just
+  make sure air moves through, and keep the sensor poking out or right at a vent.
+- **A shelf**, set back from the edge so it doesn't get knocked. Simplest of all.
+
+Cable-tie the sensor's jumper wires so they can't be tugged out. On a breadboard
+those connections back out easily, and an intermittent sensor is far more annoying
+to debug than a dead one.
+
+### Finally: calibrate out what's left
+
+Once it's mounted and has been running an hour — self-heating needs that long to
+settle — put a thermometer you trust beside it and compare.
+
+If the node reads 28.5 °C in a room that's really 27.0 °C:
+
+```python
+# firmware/room_sensor/config.py
+TEMP_OFFSET = -1.5
+```
+
+Redeploy with `./tools/deploy_node.sh`. Same idea for `HUMIDITY_OFFSET`.
+
+Fix the placement first and the offset second — an offset only shifts the whole
+curve, so it can't rescue a sensor that's sitting in the sun and swinging 8 °C.
+
+---
+
 ## Where things live
 
 | | |

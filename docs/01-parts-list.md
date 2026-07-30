@@ -135,8 +135,13 @@ WiFi. It's a 24/7 server — wired is one less thing that can drop out at 3am.
         3V3 pin, so the 3.3V board connects directly with no regulator or level
         shifter in the way. The 5V board works too, but you're paying for parts
         that only exist to protect a 5V system you don't have.
-      - **4-pin** (VIN, GND, SCL, SDA) is all you need. 6-pin boards add CSB and
-        SDO for SPI mode, which we don't use.
+      - **Pin count barely matters — don't hunt for one.** 4-pin boards
+        (VIN, GND, SCL, SDA) are marginally simpler, but the 6-pin purple
+        `GY-BME280` is the classic, most widely sold *genuine* BME280, and its
+        two extra pins (CSB, SDO) just go unconnected. If anything the small
+        4-pin form factor is the one most often used for **BMP280** boards, so
+        chasing it can raise your odds of getting the wrong chip. Check the chip,
+        not the pin count. See [04](04-node-wiring.md) for the one 6-pin quirk.
       Cheap listings around RM12 exist, but that's exactly where BMP280s get
       substituted. Around RM20–35 from a seller with real sales history is a
       reasonable price for not having to send it back.

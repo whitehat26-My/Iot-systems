@@ -45,7 +45,14 @@ so SDA and SCL can never rise above what the ESP32 expects. **ESP32 GPIOs are no
 real level shifter behind the label. Powering from 3V3 makes that question
 irrelevant instead of something you have to trust.
 
-Then you're done — no CSB or SDO to think about. Skip to the diagram.
+Then you're done — no CSB or SDO to think about, so the floating-pin problem
+described below cannot happen to you. Skip to the diagram.
+
+*Rare fallback:* if the scan finds the sensor only intermittently on 3V3, the
+module's regulator may be dropping more than its pull-ups like. Moving VCC to the
+ESP32's **5V / VIN** pin is the module's intended configuration and usually fixes
+it. Do that only if 3V3 actually misbehaves, and treat it as the exception — it
+relies on the board having a genuine level shifter.
 
 #### If yours is the 6-pin (3.3V) board
 

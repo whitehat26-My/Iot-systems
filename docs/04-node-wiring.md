@@ -116,6 +116,11 @@ print(hex(i2c.readfrom_mem(0x76, 0xD0, 1)[0]))   # use 0x77 if that's your addre
 | `0x58` | **BMP280** — no humidity sensor. You were sold the wrong chip. |
 | anything else | Not a BME/BMP280 at all. |
 
+This check exists because **the two chips ship on the same purple PCB** — many
+boards have `BME/BMP280` printed on the silkscreen, with nothing to tell you which
+one was fitted. The chip ID is the only reliable answer, and it's why the firmware
+reads it on every boot.
+
 If it's `0x58`, you have a decision: return it, or carry on with temperature and
 pressure only. Everything in this project works either way — the firmware detects
 it, tells you in as many words, and simply doesn't publish humidity. The dashboard

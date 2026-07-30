@@ -63,10 +63,28 @@ WiFi. It's a 24/7 server — wired is one less thing that can drop out at 3am.
       Search: `ESP32 DevKitC ESP32-WROOM-32 38-pin`
       **Buy two if you can.** A known-good spare removes "is the board dead?" from
       every future debugging session, and node #2 is inevitable.
+      **Check which USB socket you're actually buying.** Listings routinely show a
+      USB-C board in the main photo while the selected variant is micro-USB, and
+      then your cable doesn't fit. Match the cable to the variant, not the picture.
+      If you get a choice of USB-serial chip, **CP2102 is slightly better than
+      CH340** — fewer driver headaches on macOS and Windows. Either works.
 
-- [ ] **BME280 sensor module** — RM 12–20
+- [ ] **BME280 sensor module** — RM 15–35
       Search: `BME280 I2C module 3.3V`
       Temperature, humidity **and** pressure over I²C. Read the warning below.
+      **Three things to get right when picking a variant:**
+      - **"Soldered"** if the listing offers it. Otherwise the header pins arrive
+        loose in the bag and you need a soldering iron to attach them. Paying a
+        few ringgit more beats buying an RM60 iron for one job.
+      - **3.3V version**, not the 5V one. We wire VIN straight to the ESP32's
+        3V3 pin, so the 3.3V board connects directly with no regulator or level
+        shifter in the way. The 5V board works too, but you're paying for parts
+        that only exist to protect a 5V system you don't have.
+      - **4-pin** (VIN, GND, SCL, SDA) is all you need. 6-pin boards add CSB and
+        SDO for SPI mode, which we don't use.
+      Cheap listings around RM12 exist, but that's exactly where BMP280s get
+      substituted. Around RM20–35 from a seller with real sales history is a
+      reasonable price for not having to send it back.
 
 - [ ] **Breadboard, 830 tie points** — RM 8–12
       Search: `breadboard 830 tie points`
@@ -147,6 +165,7 @@ Kits do *not* usually include a Raspberry Pi, which is fine: on the
 
 | Item | Approx. | Why |
 |---|---|---|
+| Soldering iron + solder | RM 40–80 | **Only if** a module arrives with loose header pins. Buy "pre-soldered" variants and you can skip this entirely — nothing in this project requires soldering. |
 | 2nd BME280 + female-female jumpers | RM 20 | Let the Pi sense its own room too, via its I²C header. Put it on a ~20cm cable — see the thermal warning in [02](02-hub-setup.md). |
 | SSD1306 OLED 0.96" I²C | RM 12–18 | Shows the reading on the device itself. Shares the ESP32's existing I²C pins, so no extra wiring. |
 | PIR sensor HC-SR501 | RM 6–10 | Motion detection. The natural step 2. |

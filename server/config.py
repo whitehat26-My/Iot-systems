@@ -49,4 +49,11 @@ KNOWN_METRICS = {
     "temperature": {"unit": "°C", "label": "Temperature"},
     "humidity": {"unit": "%", "label": "Humidity"},
     "pressure": {"unit": "hPa", "label": "Pressure"},
+    # Most ESP32 starter kits include a photosensitive (LDR) module. Publish it
+    # as a 0-100 percentage from the node and it charts alongside the rest.
+    "light": {"unit": "%", "label": "Light"},
 }
+
+# Anything not listed above still works: the API falls back to the metric's own
+# name and no unit, and the dashboard builds a chart for it regardless. Adding an
+# entry here only controls the display order, label and unit.

@@ -24,8 +24,7 @@ one-time cost — once the hub exists, each additional room costs about RM 40.
 
 - [ ] **Raspberry Pi 5** — RM 300–350
       Search: `Raspberry Pi 5 4GB`
-      **2GB (~RM 250) is genuinely plenty for this project.** Take 4GB only if you
-      might later add Home Assistant or Grafana. 8GB/16GB is money wasted here.
+      **Buy the 4GB.** See the RAM note below if you're tempted by 8GB.
 
 - [ ] **Official 27W USB-C power supply** — RM 55–70
       Search: `Raspberry Pi 5 official power supply 27W`
@@ -51,6 +50,39 @@ one-time cost — once the hub exists, each additional room costs about RM 40.
 **Don't buy both a case and the active cooler.** The official Pi 5 case includes
 its own fan, so it replaces the cooler. A bare board on a desk with the active
 cooler is completely fine to start.
+
+### How much RAM? 4GB.
+
+Measured on a running hub, this is what the whole stack actually uses:
+
+| | RAM |
+|---|---|
+| Mosquitto | 8 MB |
+| `collector.py` | 24 MB |
+| `api.py` + dashboard | 47 MB |
+| **This entire project** | **~130 MB** |
+| Raspberry Pi OS Lite, idle | ~300 MB |
+| *later:* Home Assistant | ~1.5 GB |
+| *later:* InfluxDB + Grafana | ~1 GB |
+| **All of the above at once** | **~3 GB** |
+
+So you would have to be running Home Assistant *and* Grafana *and* InfluxDB
+together before 4GB felt tight. The sensor project alone uses about 3% of it.
+**2GB is also genuinely enough** for everything in this repo — it just leaves no
+headroom for the Home Assistant path later.
+
+8GB only earns its price for things this project doesn't do: a Frigate camera NVR
+with object detection, a dozen containers, using the Pi as a daily desktop, or
+running local LLMs.
+
+**Better use of the ~RM150 difference: put it toward the NVMe HAT + SSD** in the
+optional table below. SD-card corruption is the number-one way a Pi fails, and it
+fails silently. RAM you never allocate prevents nothing; an SSD prevents the
+failure you will actually hit. 4GB + NVMe beats 8GB + SD card for this build.
+
+The one honest caveat: Pi RAM is soldered, so this isn't upgradeable later. If you
+already know a camera NVR is in your future, take the 8GB. Otherwise, if you ever
+outgrow 4GB, a *second* Pi is usually a better answer than one bigger one.
 
 **Free upgrade if you have a spare cable:** run the Pi on **Ethernet** instead of
 WiFi. It's a 24/7 server — wired is one less thing that can drop out at 3am.

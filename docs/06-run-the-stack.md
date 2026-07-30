@@ -35,7 +35,8 @@ Install a broker on your laptop:
 
 - **macOS:** `brew install mosquitto`
 - **Debian / Ubuntu / WSL:** `sudo apt install mosquitto mosquitto-clients`
-- **Windows:** installer at <https://mosquitto.org/download/>
+- **Windows:** installer at <https://mosquitto.org/download/> — then read the
+  Windows box below, because two things will bite you otherwise.
 
 Then set up Python:
 
@@ -44,6 +45,44 @@ python3 -m venv .venv
 source .venv/bin/activate           # Windows: .venv\Scripts\activate
 pip install -r hub/requirements.txt
 ```
+
+> ### Windows: three things to know first
+>
+> **1. Mosquitto installs itself as a service, and it will hold port 1883.**
+> That service starts automatically using the packaged localhost-only config.
+> When you then run our config by hand you get:
+> ```
+> Error: Address already in use
+> ```
+> Stop the service first, in an **Administrator** PowerShell:
+> ```powershell
+> net stop mosquitto
+> ```
+> Running the broker by hand is what you want while learning — you get the live
+> `-v` log showing every client connecting, which is how you confirm the ESP32
+> arrived. (To make it permanent later: copy `room-sensors.conf` into
+> `C:\Program Files\mosquitto\` and restart the service instead.)
+>
+> **2. Mosquitto isn't on your PATH.** Either use the full path:
+> ```powershell
+> & "C:\Program Files\mosquitto\mosquitto.exe" -c hub\mosquitto\room-sensors.conf -v
+> ```
+> or add `C:\Program Files\mosquitto` to PATH once (Settings → search "environment
+> variables" → Path → New) and reopen your terminals.
+>
+> **3. PowerShell blocks the venv activation script** by default:
+> ```
+> .venv\Scripts\Activate.ps1 cannot be loaded because running scripts is disabled
+> ```
+> Allow it for that window only — safe, and it resets when you close it:
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> .venv\Scripts\Activate.ps1
+> ```
+> Or sidestep it entirely by using `cmd` instead of PowerShell, where
+> `.venv\Scripts\activate.bat` just works.
+>
+> Use `python` rather than `python3` throughout, and `\` rather than `/` in paths.
 
 Now four terminals. Activate the venv in each one.
 

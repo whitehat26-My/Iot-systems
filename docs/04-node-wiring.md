@@ -145,6 +145,45 @@ come back down over a minute. That's the moment it stops being abstract.
 
 ---
 
+## If you have a DHT11 or DHT22 instead
+
+Kit sensors are usually a DHT11. They're simpler to wire — one data line, no I²C:
+
+| DHT pin | ESP32 | Note |
+|---|---|---|
+| VCC / + | **3V3** | Some modules want 5V; 3V3 works on the 3-pin breakout boards. |
+| DATA / S | **GPIO13** | Any free GPIO; 13 is the default below. |
+| GND / − | **GND** | |
+
+Bare 4-pin DHT sensors (not on a small PCB) also need a 10kΩ resistor between
+DATA and VCC. Modules with three pins already have it fitted.
+
+Then in `config.py`:
+
+```python
+DHT_PIN = 13
+DHT_TYPE = "DHT11"      # blue module. White module -> "DHT22"
+```
+
+**Getting `DHT_TYPE` wrong doesn't fail cleanly.** The two chips share a wire
+protocol but encode numbers differently, so a mismatch passes the checksum and
+returns garbage — a DHT11 read as a DHT22 reports around 691 °C. The firmware
+range-checks the first reading and tells you which value to change, so you'll see
+a clear message rather than a nonsense chart.
+
+Test it from the REPL:
+
+```python
+import dht
+from machine import Pin
+d = dht.DHT11(Pin(13))     # or dht.DHT22
+d.measure()
+print(d.temperature(), d.humidity())
+```
+
+A DHT11 prints whole numbers (`27 68`). That's the sensor, not a bug — it's why a
+BME280 is worth the extra RM15.
+
 ## Adding the OLED later
 
 If you buy the SSD1306 display, it shares this same I²C bus — VIN to 3V3, GND to

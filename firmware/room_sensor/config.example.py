@@ -43,9 +43,22 @@ PUBLISH_INTERVAL = 30
 I2C_SCL_PIN = 22
 I2C_SDA_PIN = 21
 
-# Leave as None unless you are using a DHT22 instead of a BME280, in which case
-# set it to the GPIO number its DATA pin is on.
+# Leave as None unless you are using a DHT sensor instead of a BME280, in which
+# case set it to the GPIO number its DATA pin is on. Most starter kits ship a DHT
+# rather than a BME280, so if you bought a kit this is probably you.
 DHT_PIN = None
+
+# Which DHT you have. These cannot be told apart electrically, so you must say.
+#
+#   "DHT11"  blue module   - whole degrees only, +/-2C, +/-5%RH.  In most kits.
+#   "DHT22"  white module  - 0.1C resolution, +/-0.5C.            Better.
+#
+# Get this wrong and the readings come out wildly off rather than slightly off;
+# the firmware range-checks them on startup and tells you to change this line.
+#
+# Worth knowing: a DHT11's whole-degree output makes the temperature chart a
+# staircase rather than a curve. A BME280 (~RM15) fixes that and adds pressure.
+DHT_TYPE = "DHT22"
 
 # Most ESP32 DevKitC boards have an LED on GPIO2. Some use GPIO5, a few have
 # none at all. Set to None to disable the blinking; it is only a convenience.

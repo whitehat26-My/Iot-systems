@@ -93,12 +93,53 @@ sensor**. The two look nearly identical.
   minute of powering it on, instead of wondering for a week why humidity is
   always zero.
 
-### Cheaper sensor alternative
+### Cheaper sensor alternatives
 
-A **DHT22 / AM2302** (RM 10–15) also does temperature and humidity. It's less
-accurate, slower (one reading every 2 seconds at most), and its one-wire protocol
-fails intermittently on longer wires. The BME280 is the better experience, but the
-firmware supports both — set `DHT_PIN` in `config.py` if you go this way.
+A **DHT22 / AM2302** (RM 10–15, **white** module) also does temperature and
+humidity. Less accurate, slower, and its one-wire protocol fails intermittently on
+longer wires. A **DHT11** (**blue** module) is cheaper again and considerably
+worse — see the kit section below.
+
+The firmware supports all of them. Set `DHT_PIN` and `DHT_TYPE` in `config.py`.
+
+---
+
+## Buying an all-in-one starter kit?
+
+Kits on Shopee/Lazada run about **RM 55–80** and typically bundle: ESP32,
+breadboard, jumper wires, USB cable, an OLED, a PIR motion sensor, a relay,
+LEDs, resistors, buttons and a storage case. That is genuinely good value — it
+covers the whole node *plus* several of the optional extras below.
+
+**Three things to check before you buy:**
+
+**1. Which temp/humidity sensor?** Almost every kit ships a **DHT11**, and it's
+the weakest part of the box:
+
+| | DHT11 (typical kit) | DHT22 | BME280 |
+|---|---|---|---|
+| Temperature resolution | **whole degrees** | 0.1 °C | 0.01 °C |
+| Accuracy | ±2 °C, ±5 %RH | ±0.5 °C, ±2 %RH | ±0.5 °C, ±3 %RH |
+| Pressure | — | — | ✅ |
+
+Whole-degree resolution is the problem. Your chart becomes a staircase —
+`27, 27, 27, 28` — instead of a curve, and you'll never see the air-conditioning
+switch on. **Buy the kit and add a BME280 for ~RM15.** Best of both.
+
+The firmware works fine with a DHT11 — set `DHT_TYPE = "DHT11"` in `config.py` —
+it just tells you on startup what you're giving up.
+
+**2. Does the photo match the variant you selected?** Kit listings usually offer
+"basic" and "advance" versions at different prices, and the main photo is often of
+the *advance* one. Check the description for the per-variant contents rather than
+counting parts in the picture.
+
+**3. The relay.** Kits include a 1- or 2-channel relay module. Great for switching
+a low-voltage LED or USB fan to learn with. **Do not wire it to a wall socket** —
+see the mains warning below.
+
+Kits do *not* usually include a Raspberry Pi, which is fine: on the
+[ESP32-first route](00-esp32-first.md) you don't need one yet.
 
 ---
 

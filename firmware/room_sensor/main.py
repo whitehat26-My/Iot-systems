@@ -103,6 +103,8 @@ def make_sensor():
         scl_pin=config.I2C_SCL_PIN,
         sda_pin=config.I2C_SDA_PIN,
         dht_pin=getattr(config, "DHT_PIN", None),
+        # getattr so an older config.py without this line still works.
+        dht_type=getattr(config, "DHT_TYPE", "DHT22"),
     )
     print("sensor:", device.kind)
     for note in device.notes:

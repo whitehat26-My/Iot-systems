@@ -173,6 +173,51 @@ try:
 except sensor_lib.NoSensor as e:
     check("no sensor raises NoSensor", "3V3" in str(e))
 
+# --- DHT fallback: what most starter kits actually ship --------------------
+print("DHT11 / DHT22 fallback (no I2C sensor present)")
+import dht as dht_shim  # noqa: E402
+
+machine.FAKE_I2C = Empty()   # nothing on I2C, so the DHT path is taken
+
+# Correctly configured DHT22.
+dht_shim.ATTACHED = "DHT22"
+s3 = sensor_lib.Sensor(scl_pin=22, sda_pin=21, dht_pin=13, dht_type="DHT22")
+v3 = s3.read()
+check("DHT22 -> temp + humidity, no pressure", set(v3) == {"temperature", "humidity"}, str(sorted(v3)))
+check("DHT22 value sane", 20 < v3["temperature"] < 35, str(v3["temperature"]))
+
+# Correctly configured DHT11 (the kit sensor).
+dht_shim.ATTACHED = "DHT11"
+s4 = sensor_lib.Sensor(scl_pin=22, sda_pin=21, dht_pin=13, dht_type="DHT11")
+v4 = s4.read()
+check("DHT11 -> temp + humidity", set(v4) == {"temperature", "humidity"}, str(sorted(v4)))
+check("DHT11 value sane", 20 < v4["temperature"] < 35, str(v4["temperature"]))
+check("DHT11 warns about resolution", any("staircase" in n for n in s4.notes))
+
+# The mistake a kit buyer will actually make: DHT11 hardware, DHT22 in config.
+# A checksum test would pass here; only the range check catches it.
+dht_shim.ATTACHED = "DHT11"
+try:
+    sensor_lib.Sensor(scl_pin=22, sda_pin=21, dht_pin=13, dht_type="DHT22")
+    check("DHT11 read as DHT22 is rejected", False, "accepted garbage")
+except sensor_lib.NoSensor as e:
+    check("DHT11 read as DHT22 is rejected", "DHT_TYPE = 'DHT11'" in str(e))
+    check("...and names the blue/white tell", "Blue module" in str(e))
+
+# A typo'd DHT_TYPE should say so rather than silently doing nothing.
+dht_shim.ATTACHED = "DHT22"
+try:
+    sensor_lib.Sensor(scl_pin=22, sda_pin=21, dht_pin=13, dht_type="DHT-22")
+    check("bad DHT_TYPE rejected", False)
+except sensor_lib.NoSensor as e:
+    check("bad DHT_TYPE rejected", "DHT_TYPE must be" in str(e))
+
+# I2C wins when both are wired: a BME280 is strictly better than any DHT.
+machine.FAKE_I2C = FakeChip(0x60)
+dht_shim.ATTACHED = "DHT11"
+s5 = sensor_lib.Sensor(scl_pin=22, sda_pin=21, dht_pin=13, dht_type="DHT11")
+check("BME280 preferred over DHT when both present", s5.kind == "BME280", s5.kind)
+
 print()
 if fails:
     print(f"{len(fails)} FAILED: {fails}")

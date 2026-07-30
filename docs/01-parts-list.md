@@ -131,17 +131,17 @@ WiFi. It's a 24/7 server — wired is one less thing that can drop out at 3am.
       - **"Soldered"** if the listing offers it. Otherwise the header pins arrive
         loose in the bag and you need a soldering iron to attach them. Paying a
         few ringgit more beats buying an RM60 iron for one job.
-      - **3.3V version**, not the 5V one. We wire VIN straight to the ESP32's
-        3V3 pin, so the 3.3V board connects directly with no regulator or level
-        shifter in the way. The 5V board works too, but you're paying for parts
-        that only exist to protect a 5V system you don't have.
-      - **Pin count barely matters — don't hunt for one.** 4-pin boards
-        (VIN, GND, SCL, SDA) are marginally simpler, but the 6-pin purple
-        `GY-BME280` is the classic, most widely sold *genuine* BME280, and its
-        two extra pins (CSB, SDO) just go unconnected. If anything the small
-        4-pin form factor is the one most often used for **BMP280** boards, so
-        chasing it can raise your odds of getting the wrong chip. Check the chip,
-        not the pin count. See [04](04-node-wiring.md) for the one 6-pin quirk.
+      - **Voltage and pin count are the same choice, not two.** Sellers list them
+        as separate options, but in practice:
+        | Listing says | What it is | Pins |
+        |---|---|---|
+        | **3.3V** | bare breakout — no regulator, chip pins exposed | **6** (adds CSB, SDO) |
+        | **5V** | adds a regulator + I²C level shifter, which consume those pins | **4** |
+
+        So "3.3V and 4-pin" is not a thing you can buy. **Either works on an
+        ESP32** — pick on price and stock, not on this. Wiring for both is in
+        [04](04-node-wiring.md); the short version is that **VCC goes to 3V3
+        either way**, even on a board sold as 5V.
       Cheap listings around RM12 exist, but that's exactly where BMP280s get
       substituted. Around RM20–35 from a seller with real sales history is a
       reasonable price for not having to send it back.

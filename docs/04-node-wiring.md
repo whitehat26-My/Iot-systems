@@ -22,13 +22,36 @@ a powered board is how you short 3V3 to GND with a slipped jumper.
 
 ### 4-pin or 6-pin module?
 
-Both are common and both work. If yours has only `VIN GND SCL SDA`, wire those
-four and you're done — skip to the diagram.
+These are the same choice as the 3.3V/5V one, even though sellers list them
+separately:
 
-If it has **six pins** (`VCC GND SCL SDA CSB SDO`, sometimes silkscreened `CSE`
-and `SDC`), wire the same four and **leave CSB and SDO unconnected to begin
-with.** Those two are for SPI mode and for choosing the I²C address, and most
-boards pull them to sensible defaults with onboard resistors.
+| Sold as | What it is | Pins |
+|---|---|---|
+| **3.3V** | bare breakout, chip pins exposed | **6** — adds CSB, SDO |
+| **5V** | regulator + I²C level shifter, which use those pins | **4** |
+
+**Both work here, and both take VCC from 3V3.** The four connections in the table
+above are identical either way.
+
+#### If yours is the 4-pin (5V) board
+
+Wire `VCC → 3V3`, **not** to the 5V pin, even though the board is sold as 5V.
+
+Two reasons. The BME280 runs from 1.71V upward, so 3.3V minus the onboard
+regulator's small drop is still comfortably in range — it simply works. More
+importantly, powering it from 3V3 means the board's I²C pull-ups reference 3.3V,
+so SDA and SCL can never rise above what the ESP32 expects. **ESP32 GPIOs are not
+5V tolerant** (3.6V absolute maximum), and not every budget "5V" module has a
+real level shifter behind the label. Powering from 3V3 makes that question
+irrelevant instead of something you have to trust.
+
+Then you're done — no CSB or SDO to think about. Skip to the diagram.
+
+#### If yours is the 6-pin (3.3V) board
+
+Wire the same four pins and **leave CSB and SDO unconnected to begin with.**
+Those two are for SPI mode and for choosing the I²C address, and most boards pull
+them to sensible defaults with onboard resistors.
 
 **But not all of them do**, and that's the one extra way a 6-pin board can fail:
 

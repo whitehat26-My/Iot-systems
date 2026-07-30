@@ -1,0 +1,677 @@
+<!--
+  Room sensor dashboard.
+
+  Deliberately dependency-free: no CDN, no npm, no build step. A local-only
+  system should not need the internet to draw a graph, and vendoring a 200KB
+  minified chart library into a beginner's repo hides more than it teaches.
+  The charts below are plain SVG built with DOM calls — about 200 lines.
+
+  Everything is driven by the API, so a new sensor type or a new room appears
+  here with no changes to this file.
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room sensors</title>
+<!-- Inline favicon: without one the browser requests /favicon.ico on every
+     load and logs a 404. Data URI keeps it offline-safe like everything else. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%232a78d6'/%3E%3C/svg%3E">
+
+<style>
+  /* --- palette -------------------------------------------------------------
+     Light and dark are both deliberately chosen sets, not an automatic flip.
+     Declared under both a media query (OS preference) and a [data-theme]
+     scope (explicit toggle) so the toggle wins in either direction.        */
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;   /* chart / card surface */
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;   /* blue   */
+    --series-2:       #eb6834;   /* orange */
+    --series-3:       #1baf7a;   /* aqua   */
+    --deemphasis:     #c3c2b7;   /* sparkline track */
+    --status-warning: #fab219;
+    --status-good:    #0ca30c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-3:       #199e70;
+      --deemphasis:     #383835;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --series-3:       #199e70;
+    --deemphasis:     #383835;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 24px 20px 64px;
+    background: var(--page);
+    color: var(--text-primary);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .sub { color: var(--text-secondary); font-size: 13px; margin: 0 0 20px; }
+
+  /* --- filter row: one row, above everything it scopes -------------------- */
+  .filters {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .filters .spacer { flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button {
+    font: inherit; font-size: 13px; padding: 6px 11px; border: 0; cursor: pointer;
+    background: var(--surface-1); color: var(--text-secondary);
+    border-right: 1px solid var(--border);
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button:hover { color: var(--text-primary); }
+  .seg button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); font-weight: 600; }
+  select, .btn {
+    font: inherit; font-size: 13px; padding: 6px 10px; cursor: pointer;
+    background: var(--surface-1); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .btn:hover, select:hover { color: var(--text-primary); }
+
+  /* --- stat tiles --------------------------------------------------------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .tile {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+  }
+  .tile .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .tile .value { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+  .tile .value .unit { font-size: 15px; font-weight: 500; color: var(--text-secondary); margin-left: 2px; }
+  .tile .meta { font-size: 11px; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+  .tile svg { display: block; margin-top: 8px; }
+
+  /* --- chart cards -------------------------------------------------------- */
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 16px 8px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 14px; font-weight: 600; margin: 0 0 2px; }
+  .card .cardsub { font-size: 12px; color: var(--text-secondary); margin: 0 0 10px; }
+  .plot { position: relative; }
+  .plot svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+  .plot svg:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; border-radius: 4px; }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 2px 0 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .legend i { width: 16px; height: 2px; border-radius: 1px; flex: none; }
+
+  /* Tooltip: values lead, series names follow. */
+  .tip {
+    position: absolute; pointer-events: none; opacity: 0; transition: opacity .09s;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font-size: 12px; min-width: 132px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.13); z-index: 5;
+  }
+  .tip.on { opacity: 1; }
+  .tip .when { color: var(--text-muted); font-size: 11px; margin-bottom: 5px; }
+  .tip .row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .tip .row i { width: 12px; height: 2px; border-radius: 1px; flex: none; }
+  .tip .row b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .tip .row span { color: var(--text-secondary); }
+
+  /* --- table view (the relief for low-contrast series, and keyboard path) - */
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 4px; }
+  th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 12px; }
+  caption { text-align: left; font-size: 12px; color: var(--text-secondary); padding-bottom: 6px; }
+
+  .empty { background: var(--surface-1); border: 1px dashed var(--baseline); border-radius: 12px; padding: 28px; text-align: center; color: var(--text-secondary); }
+  .empty code { background: var(--page); padding: 2px 5px; border-radius: 4px; font-size: 12px; }
+  .loading { opacity: .55; }   /* refetch keeps the frame — no skeleton, no jump */
+  .warn { color: var(--text-secondary); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Room sensors</h1>
+    <span class="sub" id="hubstat"></span>
+  </header>
+  <p class="sub" id="tagline">Local readings from your own hardware. Nothing leaves the house.</p>
+
+  <div class="filters">
+    <div class="seg" id="ranges" role="group" aria-label="Time range"></div>
+    <select id="nodesel" aria-label="Filter by node"><option value="">All nodes</option></select>
+    <div class="spacer"></div>
+    <button class="btn" id="tabletoggle" aria-pressed="false">Table view</button>
+    <button class="btn" id="themetoggle" aria-label="Toggle dark mode">◐</button>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+  <div id="charts"></div>
+  <div id="tables"></div>
+</div>
+
+<script>
+"use strict";
+
+// Categorical slots, assigned in fixed order and keyed to the node's identity —
+// never to its rank in the list. Filtering the list must not repaint the
+// survivors, so the colour comes from a stable index built from every node the
+// API has ever reported.
+const SERIES_VARS = ["--series-1", "--series-2", "--series-3"];
+const colourOf = name => `var(${SERIES_VARS[(nodeOrder.indexOf(name) + SERIES_VARS.length) % SERIES_VARS.length]})`;
+let nodeOrder = [];
+
+const RANGES = [
+  { label: "1h",  hours: 1 },
+  { label: "6h",  hours: 6 },
+  { label: "24h", hours: 24 },
+  { label: "7d",  hours: 168 },
+  { label: "30d", hours: 720 },
+];
+
+const state = { hours: 24, node: "", table: false };
+const DECIMALS = { temperature: 1, humidity: 1, pressure: 0 };
+
+const fmt = (metric, v) => v.toFixed(DECIMALS[metric] ?? 1);
+const el = (tag, cls) => { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
+const svgEl = (tag, attrs = {}) => {
+  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+};
+
+function ago(seconds) {
+  if (seconds < 90) return `${Math.round(seconds)}s ago`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)} min ago`;
+  if (seconds < 172800) return `${Math.round(seconds / 3600)} h ago`;
+  return `${Math.round(seconds / 86400)} days ago`;
+}
+
+// Axis ticks land on round numbers, so the reader gets 20 / 22 / 24, never
+// 20.37 / 22.9. Returns ~`target` ticks covering [lo, hi].
+function niceTicks(lo, hi, target = 5) {
+  if (!(hi > lo)) { const c = lo || 0; lo = c - 1; hi = c + 1; }
+  const raw = (hi - lo) / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].find(m => raw <= m * mag) * mag || mag * 10;
+  const start = Math.floor(lo / step) * step, out = [];
+  for (let v = start; v <= hi + step / 2; v += step) out.push(Math.round(v / step) * step);
+  // The loop can stop just short of the data's maximum (hi = 30.1 with a step
+  // of 2 ends at 30), which would draw the peak above the plot area and clip
+  // it. Extend by one step so the axis always contains every point.
+  while (out[out.length - 1] < hi) out.push(out[out.length - 1] + step);
+  return out;
+}
+
+const timeFmt = hours => hours <= 36
+  ? t => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  : t => new Date(t).toLocaleDateString([], { day: "numeric", month: "short" });
+
+// --- one line chart ---------------------------------------------------------
+function lineChart(payload) {
+  const W = 720, H = 240, M = { t: 12, r: 54, b: 26, l: 46 };
+  const series = payload.series.filter(s => s.points.length);
+  const card = el("div", "card");
+
+  const h2 = el("h2");
+  h2.textContent = `${payload.label} (${payload.unit})`;
+  card.append(h2);
+
+  const sub = el("p", "cardsub");
+  sub.textContent = series.length === 1
+    ? series[0].name                     // single series: the subtitle names it, no legend box
+    : `${series.length} nodes`;
+  card.append(sub);
+
+  if (!series.length) {
+    const e = el("div", "cardsub"); e.textContent = "No readings in this range.";
+    card.append(e); return card;
+  }
+
+  // A legend is always present for two or more series — identity must never
+  // rest on colour-matching alone.
+  if (series.length > 1) {
+    const lg = el("div", "legend");
+    series.forEach(s => {
+      const sp = el("span"), key = el("i");
+      key.style.background = colourOf(s.name);
+      sp.append(key, document.createTextNode(s.name));   // textContent: names are untrusted
+      lg.append(sp);
+    });
+    card.append(lg);
+  }
+
+  const plot = el("div", "plot");
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", tabindex: "0" });
+  svg.setAttribute("aria-label",
+    `${payload.label} over the last ${payload.hours} hours for ${series.map(s => s.name).join(", ")}`);
+
+  const all = series.flatMap(s => s.points);
+  const xs = all.map(p => p[0]), ys = all.map(p => p[1]);
+  let x0 = Math.min(...xs), x1 = Math.max(...xs);
+  if (x1 === x0) { x0 -= 30000; x1 += 30000; }
+
+  const ticks = niceTicks(Math.min(...ys), Math.max(...ys));
+  const y0 = ticks[0], y1 = ticks[ticks.length - 1];
+  const X = t => M.l + (t - x0) / (x1 - x0) * (W - M.l - M.r);
+  const Y = v => H - M.b - (v - y0) / (y1 - y0 || 1) * (H - M.t - M.b);
+
+  // Gridlines: hairline, solid, one step off surface, recessive.
+  ticks.forEach(v => {
+    svg.append(svgEl("line", {
+      x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v),
+      stroke: "var(--gridline)", "stroke-width": 1,
+    }));
+    const t = svgEl("text", {
+      x: M.l - 8, y: Y(v) + 4, "text-anchor": "end",
+      fill: "var(--text-muted)", "font-size": 11, "font-variant-numeric": "tabular-nums",
+    });
+    t.textContent = String(v);
+    svg.append(t);
+  });
+
+  svg.append(svgEl("line", {
+    x1: M.l, x2: W - M.r, y1: H - M.b, y2: H - M.b,
+    stroke: "var(--baseline)", "stroke-width": 1,
+  }));
+
+  const tf = timeFmt(payload.hours);
+  [x0, (x0 + x1) / 2, x1].forEach((t, i) => {
+    const lb = svgEl("text", {
+      x: X(t), y: H - M.b + 16, fill: "var(--text-muted)", "font-size": 11,
+      "text-anchor": i === 0 ? "start" : i === 2 ? "end" : "middle",
+    });
+    lb.textContent = tf(t);
+    svg.append(lb);
+  });
+
+  // Data: 2px line, round join/cap. End marker ≥8px with a 2px surface ring so
+  // it stays legible where lines cross.
+  const endLabels = [];
+  series.forEach(s => {
+    const colour = colourOf(s.name);
+    svg.append(svgEl("path", {
+      d: s.points.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" "),
+      fill: "none", stroke: colour, "stroke-width": 2,
+      "stroke-linejoin": "round", "stroke-linecap": "round",
+    }));
+    const last = s.points[s.points.length - 1];
+    svg.append(svgEl("circle", {
+      cx: X(last[0]), cy: Y(last[1]), r: 4.5,
+      fill: colour, stroke: "var(--surface-1)", "stroke-width": 2,
+    }));
+    endLabels.push({ y: Y(last[1]), x: X(last[0]), value: last[1] });
+  });
+
+  // Direct end-labels, but only when they separate cleanly. When lines
+  // converge, nudged labels detach from their lines and read as noise — the
+  // legend and tooltip carry identity instead.
+  const collide = endLabels.some((a, i) =>
+    endLabels.some((b, j) => j > i && Math.abs(a.y - b.y) < 13));
+  if (!collide) {
+    endLabels.forEach(l => {
+      const t = svgEl("text", {
+        x: Math.min(l.x + 9, W - 4), y: l.y + 4, fill: "var(--text-secondary)",
+        "font-size": 11, "font-weight": 600,
+      });
+      t.textContent = fmt(payload.metric, l.value);
+      svg.append(t);
+    });
+  }
+
+  // --- hover layer: crosshair finds the X, one tooltip lists every series ---
+  const cross = svgEl("line", {
+    y1: M.t, y2: H - M.b, stroke: "var(--baseline)", "stroke-width": 1, opacity: 0,
+  });
+  const dots = series.map(s => {
+    const c = svgEl("circle", {
+      r: 4.5, fill: colourOf(s.name), stroke: "var(--surface-1)", "stroke-width": 2, opacity: 0,
+    });
+    svg.append(c); return c;
+  });
+  svg.append(cross);
+
+  const tip = el("div", "tip");
+  plot.append(svg, tip);
+
+  let cursor = -1;
+  const nearest = (s, t) => {
+    let best = s.points[0], bd = Infinity;
+    for (const p of s.points) { const d = Math.abs(p[0] - t); if (d < bd) { bd = d; best = p; } }
+    return best;
+  };
+
+  function show(clientX) {
+    const box = svg.getBoundingClientRect();
+    const t = x0 + ((clientX - box.left) / box.width * W - M.l) / (W - M.l - M.r) * (x1 - x0);
+    move(Math.max(x0, Math.min(x1, t)));
+  }
+
+  function move(t) {
+    // Snap to the longest series' real sample, so the crosshair sits on data.
+    const ref = series.reduce((a, b) => (a.points.length >= b.points.length ? a : b));
+    const anchor = nearest(ref, t);
+    cursor = ref.points.indexOf(anchor);
+
+    cross.setAttribute("x1", X(anchor[0]));
+    cross.setAttribute("x2", X(anchor[0]));
+    cross.setAttribute("opacity", 1);
+
+    tip.replaceChildren();
+    const when = el("div", "when");
+    when.textContent = new Date(anchor[0]).toLocaleString([], {
+      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+    });
+    tip.append(when);
+
+    series.forEach((s, i) => {
+      const p = nearest(s, anchor[0]);
+      dots[i].setAttribute("cx", X(p[0]));
+      dots[i].setAttribute("cy", Y(p[1]));
+      dots[i].setAttribute("opacity", 1);
+
+      const row = el("div", "row"), key = el("i"), b = el("b"), nm = el("span");
+      key.style.background = colourOf(s.name);
+      b.textContent = `${fmt(payload.metric, p[1])}${payload.unit}`;   // value leads
+      nm.textContent = s.name;                                         // label follows
+      row.append(key, b, nm);
+      tip.append(row);
+    });
+
+    tip.classList.add("on");
+    const box = svg.getBoundingClientRect();
+    const px = X(anchor[0]) / W * box.width;
+    tip.style.left = Math.max(0, Math.min(box.width - tip.offsetWidth, px + 14)) + "px";
+    tip.style.top = "8px";
+  }
+
+  const hide = () => {
+    cross.setAttribute("opacity", 0);
+    dots.forEach(d => d.setAttribute("opacity", 0));
+    tip.classList.remove("on");
+  };
+
+  svg.addEventListener("pointermove", e => show(e.clientX));
+  svg.addEventListener("pointerleave", hide);
+  svg.addEventListener("blur", hide);
+  // Same details on keyboard focus as on hover.
+  svg.addEventListener("focus", () => {
+    const ref = series.reduce((a, b) => (a.points.length >= b.points.length ? a : b));
+    move(ref.points[ref.points.length - 1][0]);
+  });
+  svg.addEventListener("keydown", e => {
+    const ref = series.reduce((a, b) => (a.points.length >= b.points.length ? a : b));
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    if (cursor < 0) cursor = ref.points.length - 1;
+    cursor = Math.max(0, Math.min(ref.points.length - 1, cursor + (e.key === "ArrowRight" ? 1 : -1)));
+    move(ref.points[cursor][0]);
+  });
+
+  card.append(plot);
+  return card;
+}
+
+// --- 12-point sparkline for a stat tile -------------------------------------
+function sparkline(points, colour) {
+  const W = 130, H = 26, pad = 3;
+  const pts = points.slice(-12);
+  if (pts.length < 2) return null;
+  const ys = pts.map(p => p[1]);
+  const lo = Math.min(...ys), hi = Math.max(...ys);
+  const X = i => pad + i / (pts.length - 1) * (W - pad * 2);
+  const Y = v => H - pad - (hi === lo ? 0.5 : (v - lo) / (hi - lo)) * (H - pad * 2);
+
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, "aria-hidden": "true" });
+  // Track in the de-emphasis hue; only the current point takes the accent.
+  svg.append(svgEl("path", {
+    d: pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" "),
+    fill: "none", stroke: "var(--deemphasis)", "stroke-width": 2,
+    "stroke-linejoin": "round", "stroke-linecap": "round",
+  }));
+  svg.append(svgEl("circle", {
+    cx: X(pts.length - 1), cy: Y(pts[pts.length - 1][1]), r: 3,
+    fill: colour, stroke: "var(--surface-1)", "stroke-width": 2,
+  }));
+  return svg;
+}
+
+// --- render -----------------------------------------------------------------
+function statTiles(latest, seriesByMetric) {
+  const box = document.getElementById("tiles");
+  box.replaceChildren();
+
+  latest
+    .filter(r => !state.node || `${r.room}/${r.node}` === state.node)
+    .forEach(r => {
+      const name = `${r.room}/${r.node}`;
+      const tile = el("div", "tile");
+
+      const lab = el("div", "label");
+      lab.textContent = latest.length > 3 ? `${r.label} · ${name}` : r.label;
+      tile.append(lab);
+
+      const val = el("div", "value");
+      val.textContent = fmt(r.metric, r.value);
+      const u = el("span", "unit"); u.textContent = r.unit;
+      val.append(u);
+      tile.append(val);
+
+      const meta = el("div", "meta");
+      const stale = r.seconds_ago > 300;
+      const dot = el("span", "dot");
+      dot.style.background = stale ? "var(--status-warning)" : "var(--status-good)";
+      // Status colour never travels alone — it ships with a text label.
+      meta.append(dot, document.createTextNode(stale ? `stale · ${ago(r.seconds_ago)}` : ago(r.seconds_ago)));
+      tile.append(meta);
+
+      const s = (seriesByMetric[r.metric] || []).find(x => x.name === name);
+      if (s) { const sp = sparkline(s.points, colourOf(name)); if (sp) tile.append(sp); }
+
+      box.append(tile);
+    });
+}
+
+function tableView(payloads) {
+  const box = document.getElementById("tables");
+  box.replaceChildren();
+  if (!state.table) return;
+
+  payloads.forEach(p => {
+    const series = p.series.filter(s => s.points.length);
+    if (!series.length) return;
+
+    const card = el("div", "card");
+    const table = el("table");
+    const cap = el("caption");
+    cap.textContent = series.length > 1
+      ? `${p.label} (${p.unit}) — most recent 25 readings, each node at its nearest reading to the row time`
+      : `${p.label} (${p.unit}) — most recent 25 readings`;
+    table.append(cap);
+
+    const head = el("tr");
+    ["Time", ...series.map(s => s.name)].forEach(h => {
+      const th = el("th"); th.textContent = h; head.append(th);
+    });
+    table.append(head);
+
+    // Row times come from the node that reports most often. Nodes never publish
+    // on the same instant, so a strict timestamp join would leave every row
+    // half empty — one value and one dash. Instead each column shows that
+    // node's nearest reading, which is what the caption says and what the
+    // tooltip already does.
+    const anchor = series.reduce((a, b) => (a.points.length >= b.points.length ? a : b));
+    const stamps = anchor.points.map(pt => pt[0]).sort((a, b) => b - a).slice(0, 25);
+
+    // Tolerance: half the anchor's typical gap, floored at 30s, so a node that
+    // has genuinely stopped reporting still shows a dash rather than a stale
+    // value pulled in from minutes away.
+    const gaps = anchor.points.slice(1).map((pt, i) => pt[0] - anchor.points[i][0]);
+    const median = gaps.length ? gaps.slice().sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : 60000;
+    const tolerance = Math.max(30000, median * 0.75);
+
+    stamps.forEach(ts => {
+      const tr = el("tr"), td = el("td");
+      td.textContent = new Date(ts).toLocaleString([], {
+        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit",
+      });
+      tr.append(td);
+      series.forEach(s => {
+        let best = null, bd = Infinity;
+        for (const pt of s.points) {
+          const d = Math.abs(pt[0] - ts);
+          if (d < bd) { bd = d; best = pt; }
+        }
+        const c = el("td");
+        c.textContent = best && bd <= tolerance ? fmt(p.metric, best[1]) : "—";
+        tr.append(c);
+      });
+      table.append(tr);
+    });
+
+    card.append(table);
+    box.append(card);
+  });
+}
+
+async function get(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`${path} → ${r.status}`);
+  return r.json();
+}
+
+let busy = false;
+async function refresh() {
+  if (busy) return;
+  busy = true;
+  const main = document.querySelector(".wrap");
+  main.classList.add("loading");           // hold the previous render, dimmed
+
+  try {
+    const [metrics, latest, nodes] = await Promise.all([
+      get("/api/metrics"), get("/api/latest"), get("/api/nodes"),
+    ]);
+
+    // Stable colour index: every node ever seen, sorted. Filtering cannot
+    // change which colour a node wears.
+    const seen = nodes.map(n => `${n.room}/${n.node}`).sort();
+    if (seen.join("|") !== nodeOrder.join("|")) {
+      nodeOrder = seen;
+      const sel = document.getElementById("nodesel");
+      sel.replaceChildren();
+      const all = el("option"); all.value = ""; all.textContent = "All nodes";
+      sel.append(all);
+      nodeOrder.forEach(n => {
+        const o = el("option"); o.value = n; o.textContent = n;
+        sel.append(o);
+      });
+      sel.value = state.node;
+    }
+
+    const charts = document.getElementById("charts");
+
+    if (!metrics.length) {
+      charts.replaceChildren();
+      const e = el("div", "empty");
+      e.innerHTML = 'No readings yet. Start the collector and a sensor — ' +
+        'or run <code>python tools/fake_sensor.py</code> to see this page work without hardware.';
+      charts.append(e);
+      document.getElementById("tiles").replaceChildren();
+      document.getElementById("tables").replaceChildren();
+      return;
+    }
+
+    const q = new URLSearchParams({ hours: state.hours });
+    if (state.node) {
+      const [room, node] = state.node.split("/");
+      q.set("room", room); q.set("node", node);
+    }
+    const payloads = await Promise.all(
+      metrics.map(m => get(`/api/readings?metric=${encodeURIComponent(m.metric)}&${q}`))
+    );
+
+    const byMetric = {};
+    payloads.forEach(p => { byMetric[p.metric] = p.series; });
+
+    statTiles(latest, byMetric);
+    charts.replaceChildren(...payloads.map(lineChart));
+    tableView(payloads);
+
+    const staleCount = nodes.filter(n => n.stale).length;
+    const stat = document.getElementById("hubstat");
+    stat.textContent = staleCount
+      ? `${nodes.length} node${nodes.length > 1 ? "s" : ""}, ${staleCount} not reporting`
+      : `${nodes.length} node${nodes.length > 1 ? "s" : ""} reporting`;
+    stat.className = staleCount ? "sub warn" : "sub";
+  } catch (err) {
+    document.getElementById("hubstat").textContent = `error: ${err.message}`;
+  } finally {
+    main.classList.remove("loading");
+    busy = false;
+  }
+}
+
+// --- controls ---------------------------------------------------------------
+const ranges = document.getElementById("ranges");
+RANGES.forEach(r => {
+  const b = el("button");
+  b.textContent = r.label;
+  b.setAttribute("aria-pressed", String(r.hours === state.hours));
+  b.onclick = () => {
+    state.hours = r.hours;
+    [...ranges.children].forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+    refresh();
+  };
+  ranges.append(b);
+});
+
+document.getElementById("nodesel").onchange = e => { state.node = e.target.value; refresh(); };
+
+const tt = document.getElementById("tabletoggle");
+tt.onclick = () => {
+  state.table = !state.table;
+  tt.setAttribute("aria-pressed", String(state.table));
+  refresh();
+};
+
+document.getElementById("themetoggle").onclick = () => {
+  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const cur = document.documentElement.getAttribute("data-theme") || (dark ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+};
+
+refresh();
+setInterval(refresh, 15000);
+</script>

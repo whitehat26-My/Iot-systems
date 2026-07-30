@@ -47,6 +47,31 @@ one-time cost — once the hub exists, each additional room costs about RM 40.
 - [ ] **USB microSD card reader** — RM 10–15 — *only if your laptop has no SD slot.*
       You need some way to write the OS image.
 
+### Where to buy a Pi (Malaysia)
+
+Raspberry Pi runs an **Approved Reseller** programme — hand-picked partners in
+over 60 countries. Buying from one means genuine boards, correct regional power
+supplies, and somebody to talk to if a unit is faulty.
+
+The authoritative list is <https://www.raspberrypi.com/resellers/> — filter by
+country. Check it before ordering, because the list does change.
+
+| Where | Why |
+|---|---|
+| **[Cytron Technologies](https://my.cytron.io/)** | Penang-based, a Raspberry Pi Approved Reseller, and the usual first stop in Malaysia. Domestic shipping, local warranty, and they stock the official PSU, cooler and cases alongside the board. |
+| **[element14 Malaysia](https://my.element14.com/buy-raspberry-pi)** | Official distributor (Farnell/Avnet). Reliable and well stocked; sometimes better on business orders, and they list stock levels honestly. |
+| **[MyDuino](https://myduino.com/)** | Another established local maker-electronics shop, often competitive on price. |
+| **Shopee / Lazada** | Fine **if** it's the retailer's own official store. Cytron and others run them. A random marketplace seller is where you get grey imports, the wrong plug, or a board with no warranty. |
+
+**⚠️ Ignore "Raspberry Pi price guide" blog pages.** Searching for prices surfaces
+a lot of auto-generated SEO pages on unrelated domains — cycling brands, expired
+sites, content farms. They scrape stale numbers and exist to collect affiliate
+clicks. Get prices from the reseller's own site.
+
+**How to sanity-check a price:** total the four things you actually need (board,
+official PSU, cooling, SD card). If a bundle costs much more than that sum, you
+are paying for HDMI cables you will never plug in — see the next section.
+
 ### ⚠️ All-in-one Pi kits are usually a bad deal
 
 Bundles branded "Raspberry Pi 5 Starter Kit" are common and often cost far more
